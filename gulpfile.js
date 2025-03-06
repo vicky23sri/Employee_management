@@ -33,7 +33,7 @@ const paths = {
     html: "./src/**/*.html",
     fonts: "./src/assets/fonts/**/*",
     assets: "./src/assets/**/*",
-    shared: "./src/partials/**/*",  // Fixed typo: .src -> ./src
+    shared: "./src/partials/**/*",
     images: "./src/assets/images/**/*",
   },
   temp: {
@@ -59,7 +59,6 @@ function tcss() {
       .pipe(postcss([tailwindcss(TD_CONFIG), require("autoprefixer")]))
       .pipe(concat({ path: "theme.css" }))
       .pipe(minifyCSS())
-      //.pipe(gulpIf("./src/assets/css/**/*.css", minifyCSS()))
       .pipe(dest(paths.src.css))
       .pipe(browsersync.stream())
   );
@@ -74,6 +73,9 @@ function html() {
       fileinclude({
         prefix: "@@",
         basepath: "@file",
+        context: {
+          webRoot: "."  // Define webRoot for file includes
+        }
       })
     )
     .pipe(replace(/src="(.{0,10})node_modules/g, 'src="$1assets/libs'))
@@ -92,6 +94,9 @@ function fileincludeTask() {
       fileinclude({
         prefix: "@@",
         basepath: "@file",
+        context: {
+          webRoot: "."  // Define webRoot for file includes
+        }
       })
     )
     .pipe(dest(paths.temp.basetemp));
@@ -99,24 +104,50 @@ function fileincludeTask() {
 
 // Copy libs file from nodemodules to dist
 function copyLibs() {
-  return src(npmDist(), { base: paths.base.node }).pipe(dest(paths.dist.libs));
+  return src(npmDist(), { base: paths.base.node })
+    .pipe(dest(paths.dist.libs));
+}
+
+// Copy apexcharts specifically (since it might not be properly included with npmDist)
+function copyApexCharts() {
+  return src('./node_modules/apexcharts/dist/**/*')
+    .pipe(dest('./dist/assets/libs/apexcharts/dist'));
 }
 
 // Image
 function images() {
-  return src(paths.src.images).pipe(dest(paths.dist.images));
+  return src(paths.src.images)
+    .pipe(dest(paths.dist.images));
 }
-// Image
+
+// Fonts
 function fonts() {
-  return src(paths.src.fonts).pipe(dest(paths.dist.fonts));
+  return src(paths.src.fonts)
+    .pipe(dest(paths.dist.fonts));
 }
+
 // Js
 function js() {
-  return src(paths.src.js).pipe(dest(paths.dist.js));
+  return src(paths.src.js)
+    .pipe(dest(paths.dist.js));
 }
+
 // Css
 function css() {
-  return src("./src/assets/css/**/*.css").pipe(dest(paths.dist.css));
+  return src("./src/assets/css/**/*.css")
+    .pipe(dest(paths.dist.css));
+}
+
+// Copy assets to temp (for development)
+function copyAssetsToTemp() {
+  return src(paths.src.assets)
+    .pipe(dest('./.temp/assets'));
+}
+
+// Copy node_modules to temp (for development)
+function copyNodeModulesToTemp() {
+  return src(npmDist(), { base: paths.base.node })
+    .pipe(dest('./.temp/assets/libs'));
 }
 
 // Clean .temp folder
@@ -137,6 +168,7 @@ function browsersyncServe(callback) {
     server: {
       baseDir: [paths.temp.basetemp, paths.src.basesrc, paths.base.base],
     },
+    port: 3000
   });
   callback();
 }
@@ -150,15 +182,24 @@ function syncReload(callback) {
 // Watch Task
 function watchTask() {
   watch(paths.src.html, series(fileincludeTask, syncReload));
-  watch([paths.src.images, paths.src.fonts], series(images, fonts));
+  watch([paths.src.images, paths.src.fonts], series(images, fonts, copyAssetsToTemp, syncReload));
   watch(
     [paths.src.tailwind, paths.src.html, TD_CONFIG],
     series(tcss, syncReload)
   );
+  watch(paths.src.js, series(js, copyAssetsToTemp, syncReload));
 }
 
-// Default Task Preview
-exports.default = series(fileincludeTask, browsersyncServe, watchTask);
+// Default Task Preview (development)
+exports.default = series(
+  cleanTemp,
+  fileincludeTask,
+  tcss,
+  copyAssetsToTemp,
+  copyNodeModulesToTemp,
+  browsersyncServe,
+  watchTask
+);
 
 // Build Task for Dist
 exports.build = series(
@@ -170,6 +211,7 @@ exports.build = series(
   js,
   fonts,
   copyLibs,
+  copyApexCharts,
   cleanTemp
 );
 
