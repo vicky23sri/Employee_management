@@ -6,8 +6,8 @@
   "scripts": {
     "start": "gulp",
     "build": "gulp build",
-    "tailwind:build": "tailwindcss -i ./src/assets/tailwind/input.css -o ./dist/assets/css/output.css",
-    "tailwind:watch": "tailwindcss -i ./src/assets/tailwind/input.css -o ./dist/assets/css/output.css --watch"
+    "build_css": "tailwindcss -i /src/assets/css/input.css -o /src/assets/css/output.css",
+    "build_watch": "tailwindcss -i /src/assets/css/input.css -o /src/assets/css/output.css --watch"
   },
   "keywords": [],
   "author": "",
