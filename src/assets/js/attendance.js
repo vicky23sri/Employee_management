@@ -37,27 +37,35 @@ document.addEventListener('DOMContentLoaded', function () {
         .addEventListener('submit', saveEditedRecord)
 
     function initializeDateTimeDisplay() {
-        const weeklyViewDiv = document.querySelector('.bg-white.rounded-xl.shadow-md.p-6.mb-8.border-l-4.border-cyan-500')
+        const weeklyViewDiv = document.querySelector('.bg-white.rounded-xl.shadow-md.p-6.mb-8');
         
-        const dateTimeContainer = document.createElement('div')
-        dateTimeContainer.className = 'date-time-display bg-white rounded-xl shadow-md p-4 mb-4 w-fit border-l-4 border-teal-500 flex justify-end'
+        // Create a wrapper div to control the layout
+        const wrapperDiv = document.createElement('div');
+        wrapperDiv.className = 'w-full flex justify-end mb-4';
+        
+        // Create the date-time container
+        const dateTimeContainer = document.createElement('div');
+        dateTimeContainer.className = 'date-time-display bg-cyan-500 rounded-md shadow-md p-4 w-fit';
         dateTimeContainer.innerHTML = `
             <div class="flex items-center">
-                <div class="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center mr-3">
-                    <i class="ti ti-clock text-red-500"></i>
+                <div class="w-10 h-10 bg-white px-3 py-2 rounded-full flex items-center justify-center mr-3">
+                    <i class="ti ti-clock text-red-500 text-2xl"></i>
                 </div>
                 <div>
-                    <div id="current-full-date" class="text-sm font-medium text-gray-600"></div>
-                    <div id="current-time" class="text-xl font-bold text-red-500">00:00:00</div>
+                    <div id="current-time" class="text-xl font-bold text-white">00:00:00</div>
+                    <div id="current-full-date" class="text-lg font-semibold text-white"></div>
                 </div>
             </div>
-        `
+        `;
         
-        // Insert before the weekly view div
-        weeklyViewDiv.parentNode.insertBefore(dateTimeContainer, weeklyViewDiv)
+        // Add the date-time container to the wrapper
+        wrapperDiv.appendChild(dateTimeContainer);
+        
+        // Insert the wrapper before the weekly view div
+        weeklyViewDiv.parentNode.insertBefore(wrapperDiv, weeklyViewDiv);
         
         // Initial update
-        updateCurrentTime()
+        updateCurrentTime();
     }
 
     function updateCurrentTime() {
@@ -109,98 +117,189 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function createDayCard(date, index) {
-        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-        const today = new Date()
+        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const today = new Date();
         
-        // Check if the date is today
-        const isToday = date.toDateString() === today.toDateString()
-        const isPast = date < today && !isToday
-        const isFuture = date > today && !isToday
-        const isSunday = date.getDay() === 0
-        // Only Sunday is considered weekend now
-        const isWeekend = isSunday
+        // Check date status
+        const isToday = date.toDateString() === today.toDateString();
+        const isPast = date < today && !isToday;
+        const isFuture = date > today && !isToday;
+        const isSunday = date.getDay() === 0;
+        const isWeekend = isSunday;
         
-        const dayDiv = document.createElement('div')
-        // Update the styling for current date with a more distinctive background color
-        dayDiv.className = `attendance-card flex flex-col items-center justify-center p-3 rounded-lg ${
+        // Create main card element with enhanced styling using only specific colors
+        const dayDiv = document.createElement('div');
+        
+        // Rich styling for current date with solid cyan-500
+        if (isToday) {
+            dayDiv.className = 'attendance-card relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-xl bg-cyan-500 border-2 border-cyan-500 shadow-lg transform hover:scale-105 transition-all duration-300 week-selector cursor-pointer';
+        } else if (isWeekend) {
+            dayDiv.className = 'attendance-card relative flex flex-col items-center justify-center p-4 rounded-xl bg-red-400 border border-red-400 shadow-md hover:shadow-lg transition-all duration-300 week-selector cursor-pointer';
+        } else if (isPast) {
+            dayDiv.className = 'attendance-card relative flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-300 week-selector cursor-pointer';
+        } else {
+            dayDiv.className = 'attendance-card relative flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-300 week-selector cursor-pointer';
+        }
+        
+        dayDiv.setAttribute('data-date', formatDate(date));
+        
+        // Create a content wrapper to position above any background elements
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'relative z-10 flex flex-col items-center';
+        
+        // Month indicator for better context (only for first day of month or first card)
+        if (date.getDate() === 1 || index === 0) {
+            const monthIndicator = document.createElement('div');
+            monthIndicator.className = `text-xs font-medium uppercase tracking-wider mb-1 ${
+                isToday ? 'text-white' : isWeekend ? 'text-white' : 'text-gray-400'
+            }`;
+            monthIndicator.textContent = monthNames[date.getMonth()];
+            contentWrapper.appendChild(monthIndicator);
+        }
+        
+        // Enhanced day of week display
+        const dayOfWeek = document.createElement('div');
+        dayOfWeek.className = `text-xs font-semibold ${
             isToday
-                ? 'bg-cyan-100 border-2 border-cyan-500 shadow-md'
-                : 'bg-white border border-gray-200'
-        } week-selector cursor-pointer`
-        dayDiv.setAttribute('data-date', formatDate(date))
+                ? 'text-white'
+                : isWeekend
+                    ? 'text-white font-bold'
+                    : 'text-gray-500'
+        } uppercase tracking-wider`;
+        const dayNameIndex = index;
+        dayOfWeek.textContent = dayNames[dayNameIndex];
         
-        // Create day of week display - Sunday in red, current day more prominent
-        const dayOfWeek = document.createElement('div')
-        dayOfWeek.className = `text-xs font-medium ${
-            isWeekend
-                ? 'text-red-600 font-bold'
-                : isToday
-                ? 'text-cyan-800 font-bold'
-                : 'text-gray-500'
-        }`
-        // Map day index (0-6) to correct day name (Mon-Sun)
-        const dayNameIndex = index
-        dayOfWeek.textContent = dayNames[dayNameIndex]
+        // Enhanced date display with different visual treatments
+        const dateDisplay = document.createElement('div');
+        if (isToday) {
+            // Create a more elaborate date display for today
+            dateDisplay.className = 'relative flex items-center justify-center';
+            
+            const dateCircle = document.createElement('div');
+            dateCircle.className = 'absolute w-12 h-12 rounded-full bg-white bg-opacity-25';
+            
+            const dateText = document.createElement('div');
+            dateText.className = 'text-2xl font-bold text-white z-10';
+            dateText.textContent = date.getDate();
+            
+            dateDisplay.appendChild(dateCircle);
+            dateDisplay.appendChild(dateText);
+        } else if (isWeekend) {
+            dateDisplay.className = 'text-2xl font-bold mt-1 text-white';
+            dateDisplay.textContent = date.getDate();
+        } else {
+            dateDisplay.className = 'text-2xl font-bold mt-1 text-gray-700';
+            dateDisplay.textContent = date.getDate();
+        }
         
-        // Create date display with enhanced highlighting for current date
-        const dateDisplay = document.createElement('div')
-        dateDisplay.className = `text-2xl font-bold mt-1 ${
-            isWeekend
-                ? 'text-red-600'
-                : isToday
-                ? 'text-cyan-700'
-                : isPast
-                ? 'text-gray-700'
-                : 'text-gray-600'
-        }`
-        dateDisplay.textContent = date.getDate()
-        
-        // Create indicator for attendance status (not for Sunday)
+        // Create indicator for attendance status with enhanced visuals
         if (!isWeekend) {
-            const attendanceRecord = getAttendanceForDate(formatDate(date))
-            let statusIndicator = document.createElement('div')
-            statusIndicator.className = 'w-2 h-2 rounded-full mt-2 opacity-0'
+            const attendanceRecord = getAttendanceForDate(formatDate(date));
             
             if (attendanceRecord) {
-                statusIndicator.classList.remove('opacity-0')
+                const statusContainer = document.createElement('div');
+                statusContainer.className = 'mt-2 flex items-center';
+                
+                const statusIndicator = document.createElement('div');
+                
                 if (attendanceRecord.status === 'present') {
-                    statusIndicator.classList.add('bg-blue-500')
+                    statusIndicator.className = 'w-3 h-3 rounded-full bg-blue-400 animate-pulse';
+                    
+                    // Add label for status on hover
+                    const statusLabel = document.createElement('div');
+                    statusLabel.className = 'absolute bottom-0 left-0 right-0 text-center text-xs font-medium text-blue-700 bg-blue-400 bg-opacity-30 py-1 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity';
+                    statusLabel.textContent = 'Present';
+                    dayDiv.appendChild(statusLabel);
+                    dayDiv.classList.add('group');
+                    
                 } else if (attendanceRecord.status === 'late') {
-                    statusIndicator.classList.add('bg-yellow-500')
+                    statusIndicator.className = 'w-3 h-3 rounded-full bg-red-400';
+                    
+                    // Add label for status on hover
+                    const statusLabel = document.createElement('div');
+                    statusLabel.className = 'absolute bottom-0 left-0 right-0 text-center text-xs font-medium text-red-700 bg-red-400 bg-opacity-30 py-1 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity';
+                    statusLabel.textContent = 'Late';
+                    dayDiv.appendChild(statusLabel);
+                    dayDiv.classList.add('group');
+                    
                 } else {
-                    statusIndicator.classList.add('bg-red-500')
+                    statusIndicator.className = 'w-3 h-3 rounded-full bg-red-500';
+                    
+                    // Add label for status on hover
+                    const statusLabel = document.createElement('div');
+                    statusLabel.className = 'absolute bottom-0 left-0 right-0 text-center text-xs font-medium text-red-700 bg-red-500 bg-opacity-30 py-1 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity';
+                    statusLabel.textContent = 'Absent';
+                    dayDiv.appendChild(statusLabel);
+                    dayDiv.classList.add('group');
                 }
+                
+                statusContainer.appendChild(statusIndicator);
+                contentWrapper.appendChild(statusContainer);
             }
-            dayDiv.appendChild(statusIndicator)
         } else {
-            // For Sunday, add a "Weekend" badge
-            const weekendBadge = document.createElement('div')
-            weekendBadge.className =
-                'text-xs font-semibold mt-2 px-2 py-1 bg-red-100 text-red-600 rounded'
-            weekendBadge.textContent = 'Weekend'
-            dayDiv.appendChild(weekendBadge)
+            // Enhanced Weekend badge
+            const weekendBadge = document.createElement('div');
+            weekendBadge.className = 'text-xs font-semibold mt-2 px-3 py-1 bg-white bg-opacity-30 text-white rounded-full flex items-center';
+            
+            // Add a small icon for weekend
+            const weekendIcon = document.createElement('span');
+            weekendIcon.className = 'mr-1 text-xs';
+            weekendIcon.innerHTML = '&#x1F3D6;'; // Beach with umbrella emoji
+            weekendBadge.appendChild(weekendIcon);
+            
+            const weekendText = document.createElement('span');
+            weekendText.textContent = 'Weekend';
+            weekendBadge.appendChild(weekendText);
+            
+            contentWrapper.appendChild(weekendBadge);
         }
         
-        // For today, add a "Today" badge for better visibility
+        // Enhanced Today badge with animation
         if (isToday) {
-            const todayBadge = document.createElement('div')
-            todayBadge.className =
-                'text-xs font-semibold mt-2 px-2 py-1 bg-cyan-200 text-cyan-700 rounded'
-            todayBadge.textContent = 'Today'
-            dayDiv.appendChild(todayBadge)
+            const todayBadge = document.createElement('div');
+            todayBadge.className = 'text-xs font-semibold mt-2 px-3 py-1 bg-white bg-opacity-30 text-white rounded-full flex items-center shadow-sm';
+            
+            // Add small icon for today
+            const todayIcon = document.createElement('span');
+            todayIcon.className = 'mr-1 text-xs';
+            todayIcon.innerHTML = '&#x1F4C5;'; // Calendar emoji
+            todayBadge.appendChild(todayIcon);
+            
+            const todayText = document.createElement('span');
+            todayText.textContent = 'Today';
+            todayBadge.appendChild(todayText);
+            
+            contentWrapper.appendChild(todayBadge);
+            
+            // Add subtle animation for today's card
+            dayDiv.classList.add('animate-border');
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes border-pulse {
+                    0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7); }
+                    70% { box-shadow: 0 0 0 10px rgba(6, 182, 212, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+                }
+                .animate-border {
+                    animation: border-pulse 2s infinite;
+                }
+            `;
+            document.head.appendChild(style);
         }
         
-        dayDiv.appendChild(dayOfWeek)
-        dayDiv.appendChild(dateDisplay)
+        contentWrapper.appendChild(dayOfWeek);
+        contentWrapper.appendChild(dateDisplay);
+        dayDiv.appendChild(contentWrapper);
         
         dayDiv.addEventListener('click', () => {
             // Don't highlight Sunday in the table as it has no data
             if (!isWeekend) {
-                highlightDayInTable(formatDate(date))
+                highlightDayInTable(formatDate(date));
             }
-        })
+        });
         
-        return dayDiv
+        return dayDiv;
     }
 
     function navigateToPreviousWeek () {
@@ -708,17 +807,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                 </td>
                 <td class="py-4 px-6 border-b ${!record.isToday ? 'border-gray-200' : ''}">
-    <div class="flex items-center">
-        <i class="ti ti-clock mr-2 ${record.isToday ? 'text-white' : 'text-gray-500'}"></i>
-        ${record.checkIn}
-    </div>
-</td>
-<td class="py-4 px-6 border-b ${!record.isToday ? 'border-gray-200' : ''}">
-    <div class="flex items-center">
-        <i class="ti ti-check mr-2 ${record.isToday ? 'text-white' : 'text-gray-500'}"></i>
-        ${record.checkOut}
-    </div>
-</td>
+                    <div class="flex items-center">
+                        <i class="ti ti-clock mr-2 ${record.isToday ? 'text-white' : 'text-gray-500'}"></i>
+                        ${record.checkIn}
+                    </div>
+                </td>
+                <td class="py-4 px-6 border-b ${!record.isToday ? 'border-gray-200' : ''}">
+                    <div class="flex items-center">
+                        <i class="ti ti-check mr-2 ${record.isToday ? 'text-white' : 'text-gray-500'}"></i>
+                        ${record.checkOut}
+                    </div>
+                </td>
                 <td class="py-4 px-6 border-b ${!record.isToday ? 'border-gray-200' : ''} text-center">
                     ${hoursDisplay}
                 </td>
